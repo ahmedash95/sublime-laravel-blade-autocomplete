@@ -4,6 +4,7 @@ import os
 import fnmatch
 import re
 
+
 class BladeAutoComplete(sublime_plugin.EventListener):
     
     files = []
@@ -11,7 +12,8 @@ class BladeAutoComplete(sublime_plugin.EventListener):
     
     def load_blade_files(self,view):
         self.blade_files = []
-        path = view.window().folders()[0] + "/resources/views/"
+
+        path = view.window().folders()[0] + os.path.sep + os.path.join('resources','views') + os.path.sep
         matches = []
         for root, dirnames, filenames in os.walk(path):
             for filename in fnmatch.filter(filenames, '*.blade.php'):
@@ -20,21 +22,21 @@ class BladeAutoComplete(sublime_plugin.EventListener):
 
         for file in self.files:
             file_name = file.replace(path,'')
-            file_append_text = file_name.replace('.blade.php','').replace('/','.')
+            file_append_text = file_name.replace('.blade.php','').replace(os.path.sep,'.')
             t = ("%s \tBlade Autocomplete" % file_name, file_append_text)
             self.blade_files.append(t)
 
     def find_yields_in_layout(self,layout):
         layout_path = None
         for file in self.files:
-            if layout.replace('.','/') in file:
+            if layout.replace('.',os.path.sep) in file:
                 layout_path = file
         
         if layout_path == None: return []
 
-        file = open(layout_path,"r")
-        content = file.read()
-        file.close()
+        with open(layout_path,"r") as file:
+            content = file.read()
+            file.close()
         matches = re.findall( r'\@yield\((?:\'|\")(.*?)(?:\'|\")\)', content, re.M|re.I)
         return matches
 
