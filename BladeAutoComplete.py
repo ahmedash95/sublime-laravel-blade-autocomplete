@@ -1,43 +1,48 @@
 import sublime_plugin
 import sublime
-import os
+from os import path, walk
 import fnmatch
 import re
 
 
 class BladeAutoComplete(sublime_plugin.EventListener):
-    
     files = []
     blade_files = []
-    
-    def load_blade_files(self,view):
+
+    def load_blade_files(self, view):
         self.blade_files = []
 
-        path = view.window().folders()[0] + os.path.sep + os.path.join('resources','views') + os.path.sep
+        views_folder = ''.join([
+            view.window().folders()[0],
+            path.sep,
+            path.join('resources', 'views'),
+            path.sep])
+
         matches = []
-        for root, dirnames, filenames in os.walk(path):
+        for root, dirnames, filenames in walk(views_folder):
             for filename in fnmatch.filter(filenames, '*.blade.php'):
-                matches.append(os.path.join(root, filename))
+                matches.append(path.join(root, filename))
         self.files = matches
 
         for file in self.files:
-            file_name = file.replace(path,'')
-            file_append_text = file_name.replace('.blade.php','').replace(os.path.sep,'.')
-            t = ("%s \tBlade Autocomplete" % file_name, file_append_text)
+            file_name = file.replace(views_folder, '')
+            file_append_text = file_name.replace('.blade.php', '').replace(path.sep, '.')
+            t = ('{} \tBlade Autocomplete'.format(file_name), file_append_text)
             self.blade_files.append(t)
 
-    def find_yields_in_layout(self,layout):
+    def find_yields_in_layout(self, layout):
         layout_path = None
         for file in self.files:
-            if layout.replace('.',os.path.sep) in file:
+            if layout.replace('.', path.sep) in file:
                 layout_path = file
-        
-        if layout_path == None: return []
 
-        with open(layout_path,"r") as file:
+        if layout_path is None:
+            return []
+
+        with open(layout_path, 'r') as file:
             content = file.read()
             file.close()
-        matches = re.findall( r'\@yield\((?:\'|\")(.*?)(?:\'|\")\)', content, re.M|re.I)
+        matches = re.findall(r'\@yield\((?:\'|\")(.*?)(?:\'|\")\)', content, re.M | re.I)
         return matches
 
     def on_query_completions(self, view, prefix, locations):
@@ -45,37 +50,21 @@ class BladeAutoComplete(sublime_plugin.EventListener):
         line = view.substr(view.line(view.sel()[0])).strip()
 
         if line.startswith('@extends'):
-            # Cursor is inside a quoted attribute
-            # Now check if we are inside the class attribute
-
-            # max search size
-            LIMIT  = 250
-
-            # place search cursor one word back
-            cursor = locations[0] - len(prefix) - 1
-
-            # dont start with negative value
-            start  = max(0, cursor - LIMIT - len(prefix))
-
-            # get part of buffer
-            line   = view.substr(sublime.Region(start, cursor))
-
-            # split attributes
-            parts  = line.split('=')
-
-            # is the last typed attribute a class attribute?
             return self.blade_files
 
-        elif line.startswith("@section"):
+        elif line.startswith('@section'):
             # place search cursor one word back
             cursor = locations[0] - len(prefix) - 1
+
             body = view.substr(sublime.Region(0, cursor))
-            matches = re.match( r'\@extends\((?:\'|\")(.*?)(?:\'|\")\)', body, re.M|re.I)
-            if not matches: return []
-            
+
+            matches = re.match(r'\@extends\((?:\'|\")(.*?)(?:\'|\")\)', body, re.M | re.I)
+            if not matches:
+                return []
+
             layout = matches.group(1)
             layout_yields = self.find_yields_in_layout(layout)
-            return [("%s \tin %s" % (s,layout), s) for s in layout_yields]
 
-        else:
-            return []
+            return [('{} \tin {}'.format(section, layout), section) for section in layout_yields]
+
+        return None
