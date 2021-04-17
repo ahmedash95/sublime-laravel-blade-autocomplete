@@ -54,7 +54,8 @@ class BladeAutoComplete(sublime_plugin.EventListener):
         line = view.substr(view.line(view.sel()[0])).strip()
 
         if line.startswith('@extends'):
-            return self.blade_files
+            return (self.blade_files,
+                    sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
         elif line.startswith('@section'):
             # place search cursor one word back
@@ -69,6 +70,7 @@ class BladeAutoComplete(sublime_plugin.EventListener):
             layout = matches.group(1)
             layout_yields = self.find_yields_in_layout(layout)
 
-            return [('{} \tin {}'.format(section, layout), section) for section in layout_yields]
+            return ([('{} \tin {}'.format(section, layout), section) for section in layout_yields],
+                    sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
         return None
