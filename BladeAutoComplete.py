@@ -62,7 +62,7 @@ class BladeAutoComplete(sublime_plugin.EventListener):
 
             body = view.substr(sublime.Region(0, cursor))
 
-            matches = re.match(r'\@extends\((?:\'|\")(.*?)(?:\'|\")\)', body, re.M | re.I)
+            matches = re.search(r'\@extends\((?:\'|\")(.*?)(?:\'|\")\)', body, re.M | re.I)
             if not matches:
                 return []
 
