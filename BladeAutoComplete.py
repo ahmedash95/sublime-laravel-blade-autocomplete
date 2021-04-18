@@ -46,7 +46,8 @@ class BladeAutoComplete(sublime_plugin.EventListener):
         return matches
 
     def on_query_completions(self, view, prefix, locations):
-        if (not fnmatch.fnmatch(view.file_name(), '*.blade.php')
+        if (not view.file_name()
+                or not fnmatch.fnmatch(view.file_name(), '*.blade.php')
                 or len(view.window().folders()) < 1):
             return None
 
